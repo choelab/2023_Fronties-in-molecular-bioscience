@@ -48,27 +48,30 @@ get_correct_root_state <- function(cds, cell_phenotype, root_type){
   root_pr_nodes
 }
 
+Idents(mg.subset) <- as.factor(mg.subset@meta.data$cell_type_age)
 cds <- as.cell_data_set(mg.subset)
 
 recreate.partitions <- c(rep(1, length(cds@colData@rownames)))
 names(recreate.partitions) <- cds@colData@rownames
 recreate.partitions <- as.factor(recreate.partitions)
-# recreate.partitions
 
 cds@int_colData@listData[["reducedDims"]]@listData[["UMAP"]] <- mg.subset@reductions$umap@cell.embeddings
 
+# cds <- cluster_cells(cds, reduction_method = "UMAP")
+
 cds@clusters@listData[["UMAP"]][["partitions"]] <- recreate.partitions
-list.cluster <- mg.subset@active.ident#as.factor(mg.subset@meta.data$cell_type_age)
+list.cluster <- mg.subset@active.ident
 cds@clusters@listData[["UMAP"]][["clusters"]] <- list.cluster
 
 cds <- learn_graph(cds, 
                     close_loop = FALSE, 
-                    learn_graph_control = list(minimal_branch_len = 5),
+                    learn_graph_control = list(minimal_branch_len = 25),
                     use_partition = F)
-DN_node_id = get_correct_root_state(cds, cell_phenotype = 'cell_type_age', "MG-02")
+
+# colData(cds)$ident
+DN_node_id = get_correct_root_state(cds, cell_phenotype = 'ident', "MG-02")
 
 cds <- order_cells(cds, reduction_method = "UMAP",  root_pr_nodes = DN_node_id) #root_cells = colnames(cds[, clusters(cds) == "MG-02"])
-
 
 require(magrittr)
 # Get the closest vertice for every cell
@@ -151,21 +154,21 @@ colnames(patternRes)
 
 rownames(patternRes) <- rownames(sces)
 
-gene.p <- data.frame(patternRes) %>% dplyr::filter(pvalue_4vs5 < 0.01) %>% rownames()
+gene.p <- data.frame(patternRes) %>% dplyr::filter(pvalue_4vs6 < 0.01) %>% rownames()
 gene.4 <- data.frame(assoRes) %>% dplyr::filter(pvalue_4 < 0.01) %>% rownames()
-gene.5 <- data.frame(assoRes) %>% dplyr::filter(pvalue_5 < 0.01) %>% rownames()
+gene.6 <- data.frame(assoRes) %>% dplyr::filter(pvalue_6 < 0.01) %>% rownames()
 
 insGenes <- intersect(gene.p[!grepl("Rik$|^Gm|^mt.|n.", gene.p)],intersect(gene.4, gene.5))
 
-cds_subset.5 <- cds[,rownames(colData(cds)) %in% cds_sub[[5]]$cells]
+cds_subset.6 <- cds[,rownames(colData(cds)) %in% cds_sub[[6]]$cells]
 cds_subset.4 <- cds[,rownames(colData(cds)) %in% cds_sub[[4]]$cells]
 
-pt.matrix.5 <- exprs(cds_subset.5)[match(insGenes,rownames(rowData(cds_subset.5))),order(pseudotime(cds_subset.5))]
+pt.matrix.6 <- exprs(cds_subset.6)[match(insGenes,rownames(rowData(cds_subset.6))),order(pseudotime(cds_subset.6))]
 pt.matrix.4 <- exprs(cds_subset.4)[match(insGenes,rownames(rowData(cds_subset.4))),order(pseudotime(cds_subset.4))]
 
-pt.matrix.5 <- t(apply(pt.matrix.5, 1,function(x){smooth.spline(x,df=3)$y}))
-pt.matrix.5 <- t(apply(pt.matrix.5, 1,function(x){(x-mean(x))/sd(x)}))
-rownames(pt.matrix.5) <- insGenes;
+pt.matrix.6 <- t(apply(pt.matrix.6, 1,function(x){smooth.spline(x,df=3)$y}))
+pt.matrix.6 <- t(apply(pt.matrix.6, 1,function(x){(x-mean(x))/sd(x)}))
+rownames(pt.matrix.6) <- insGenes;
 
 pt.matrix.4 <- t(apply(pt.matrix.4, 1,function(x){smooth.spline(x,df=3)$y}))
 pt.matrix.4 <- t(apply(pt.matrix.4, 1,function(x){(x-mean(x))/sd(x)}))
@@ -223,7 +226,7 @@ Figure2B <- plot_density(mg.subset,
                method = c("wkde"), size = 1, adjust=1)
 
 ###### Figure 2C
-Figure2C_routeA <-plot_cells(cds_subset[[5]],
+Figure2C_routeA <-plot_cells(cds_subset[[6]],
                color_cells_by = "pseudotime",
                show_trajectory_graph = TRUE,
                trajectory_graph_color = "grey50",
@@ -248,7 +251,7 @@ Figure2C_routeB <- plot_cells(cds_subset[[4]],
 
 ###### Figure 2D
 require(ggvenn)
-list_venn <- list("Track A" = gene.5,
+list_venn <- list("Track A" = gene.6,
                   "Track B" = gene.4)
 
 Figure2D <- ggvenn(list_venn, c("Track A", "Track B"))  
@@ -257,18 +260,13 @@ Figure2D <- ggvenn(list_venn, c("Track A", "Track B"))
 Figure2E <- plotSmoothers(sces, counts, gene = c("Trem2"), lwd = 1, nPoints = 100, lineagesToPlot = c(4,5))
 
 ###### Figure 2F
-hthc.5 <- Heatmap(
-  pt.matrix.5,
+hthc.6 <- Heatmap(
+  pt.matrix.6,
   name                         = "z-score",
-  # col                          = colorRamp2(seq(from=-2,to=2,length=11),rev(brewer.pal(11, "Spectral"))),
   show_row_names               = TRUE,
   show_column_names            = FALSE,
-  # row_labels = ifelse(rownames(pt.matrix) %in% as.character(convert_human_to_mouse_symbols(unique(unlist(str_split(enrich_result.sel$G,"\\;"))))), rownames(pt.matrix), ""),
-  # row_labels = ifelse(rownames(pt.matrix) %in% c("Trem2",gene.4s), rownames(pt.matrix), ""),
   row_names_gp                 = gpar(fontsize = 8),
   km = 5,
-  # clustering_method_rows = "ward.D2",
-  # clustering_method_columns = "ward.D2",
   row_title_rot                = 0,
   cluster_rows                 = TRUE,
   cluster_row_slices           = FALSE,
@@ -277,18 +275,13 @@ hthc.5 <- Heatmap(
 hthc.4 <- Heatmap(
   pt.matrix.4,
   name                         = "z-score",
-  # col                          = colorRamp2(seq(from=-2,to=2,length=11),rev(brewer.pal(11, "Spectral"))),
   show_row_names               = TRUE,
   show_column_names            = FALSE,
-  # row_labels = ifelse(rownames(pt.matrix.4) %in% as.character(convert_human_to_mouse_symbols(unique(unlist(str_split(enrich_result.sel4$Genes,"\\;"))))), rownames(pt.matrix.4), ""),
-  # row_labels = ifelse(rownames(pt.matrix.4) %in% c("Cyld","Tacr1","Tbc1d24","Lrba"), rownames(pt.matrix.4), ""),
   row_names_gp                 = gpar(fontsize = 8),
   km = 4,
-  # clustering_method_rows = "ward.D2",
-  # clustering_method_columns = "ward.D2",
   row_title_rot                = 0,
   cluster_rows                 = TRUE,
   cluster_row_slices           = FALSE,
   cluster_columns              = FALSE)
 
-Figure2F <-  hthc.5 + hthc.4
+Figure2F <-  hthc.6 + hthc.4
