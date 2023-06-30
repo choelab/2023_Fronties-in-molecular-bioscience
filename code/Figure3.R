@@ -1,4 +1,5 @@
 options(stringsAsFactors = FALSE)
+source("/choelab/Fronties-in-molecular-bioscience-2023/code/single_cell_function.R")
 
 ###### Load data
 
@@ -122,10 +123,9 @@ for(ids in c("03","01","10")) {
 names(mg.subset.DE.wt) <- c("03","01","04","05","07","10")
 
 ###### pahtway analysis of WT
-require(DOSE)
-# library(plyr)
-# library(dplyr)
 
+
+require(DOSE)
 require(AnnotationDbi)
 #library(org.Hs.eg.db)
 require(org.Mm.eg.db)
