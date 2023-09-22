@@ -123,8 +123,6 @@ for(ids in c("03","01","10")) {
 names(mg.subset.DE.wt) <- c("03","01","04","05","07","10")
 
 ###### pahtway analysis of WT
-
-
 require(DOSE)
 require(AnnotationDbi)
 #library(org.Hs.eg.db)
@@ -140,7 +138,7 @@ microglia_vs_HM.wt.kegg <- list()
 microglia_vs_HM.wt.wiki <- list()
 genenlist <- list()
 
-for(id in c("03","01","10")) {
+for(id in c("03","01")) {
     de<-c()
     selectedGenes <- c()
     gene_list <-c()
@@ -217,14 +215,6 @@ for(id in c("03","01","10")) {
                   pAdjustMethod = "none", 
                   verbose = TRUE)
 
-     microglia_vs_HM.wt.wiki[[id]] <- gseWP(gene.list,
-               organism     = 'Mus musculus',
-               
-                minGSSize = 3,
-                  maxGSSize = 1000,
-               pvalueCutoff = 0.1,
-               verbose      = FALSE)
-
     } 
 }
 
@@ -240,16 +230,16 @@ df.reactome <- cbind(data.frame(setReadable(microglia_vs_HM.wt.reactome[["01"]],
 
 require(EnhancedVolcano)
 require(nichenetr)
-ciliGenes<-fread("/mnt/workingB/genesets/CiliaCarta.csv") #%>% dplyr::filter("in") %>% pull("Associated Gene Name") %>% convert_human_to_mouse_symbols()
+
+
+ciliGenes<-fread("/choelab/Fronties-in-molecular-bioscience-2023/code/CiliaCarta.csv") #%>% dplyr::filter("in") %>% pull("Associated Gene Name") %>% convert_human_to_mouse_symbols()
 ciliGene <- ciliGenes[,2][grep("Gene Ontology",ciliGenes$Inclusion)] %>% pull("Associated Gene Name") %>% convert_human_to_mouse_symbols()
 
-phago<-fread("/mnt/workingB/genesets/GO_term_summary_20230919_012306.txt")
-phagocytosis <- phago$'MGI Gene/Marker ID' %>% unique()
-
+Figue3_VC <- list()
 for(id in c("03","01")) {
 require(EnhancedVolcano)
-  pdf(paste0(file.path("/mnt","workingD","analysis","results"),"/Figure3_vc_",id,".pdf"), width = 5, height = 7.5)
-  EnhancedVolcano(mg.subset.DE.wt[[id]],
+  
+Figure3_VC[[id]] <- EnhancedVolcano(mg.subset.DE.wt[[id]],
                       lab = mg.subset.DE.wt[[id]] %>% rownames(),
                       x = 'avg_log2FC',
                       y = 'p_val'   ,
@@ -276,7 +266,7 @@ require(EnhancedVolcano)
                       subtitleLabSize = 10,
                       captionLabSize = 10,
                       maxoverlapsConnectors = 100)
-    dev.off()
+
 }
 
 
@@ -284,10 +274,9 @@ require(EnhancedVolcano)
 require(ggsci)
 require(RColorBrewer)
 #   mutate(setSize = str_sub(Overlap, 0, str_locate(Overlap, "/")[,1]-1) %>% as.numeric()) %>%
-p3e<-rbind(df.cc[grepl("vesicle|granule|vacuole|lysosome|endosome|cili", df.cc$Description) & !grepl("regulation", df.cc$Description),],
+Figure3E<-rbind(df.cc[grepl("vesicle|granule|vacuole|lysosome|endosome|cili", df.cc$Description) & !grepl("regulation", df.cc$Description),],
         df.bp[grepl("gliogenesis|wound|inflammatory|cili", df.bp$Description) & !grepl("regulation", df.bp$Description),],
         df.reactome[!grepl("Signal|Neutrophil|GTPase|Regulation", df.reactome$Description), ])  %>%
- #arrange(desc(setSize)) %>%
   ggplot(aes(x=NES, y=Description, fill = cluster))+
   geom_col(just = 0.5) +
         theme_bw() + 
