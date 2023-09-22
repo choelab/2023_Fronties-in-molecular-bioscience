@@ -145,7 +145,7 @@ for(id in c("03","01","10")) {
     selectedGenes <- c()
     gene_list <-c()
     gene_lists <-c()
-    selectedGene <- mg.subset.DE.wt[[id]] %>% dplyr::filter(p_val < 0.01  & abs(avg_log2FC) > 0.25)
+    selectedGene <- mg.subset.DE.wt[[id]] %>% dplyr::filter(p_val_adj < 0.1  & abs(avg_log2FC) > 0.25)
     selectedGenes <- selectedGene[!grepl("^mt\\.", rownames(selectedGene)),]   
     gene_lists<- selectedGenes %>% dplyr::select(avg_log2FC)
   
