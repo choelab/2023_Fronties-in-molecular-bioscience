@@ -228,3 +228,83 @@ for(id in c("03","01","10")) {
     } 
 }
 
+
+
+df.cc <- rbind(cbind(data.frame(microglia_vs_HM.wt.cc[["01"]]) %>% dplyr::filter(pvalue < 0.01), "cluster" = "MG-01"),
+               cbind(data.frame(microglia_vs_HM.wt.cc[["03"]]) %>% dplyr::filter(pvalue < 0.01), "cluster" = "MG-03")) #,cbind(data.frame(microglia_vs_HM.wt.cc[["10"]]) %>% dplyr::filter(pvalue < 0.01), "cluster" = "MG-10")
+df.bp <- rbind(cbind(data.frame(microglia_vs_HM.wt.bp[["01"]]) %>% dplyr::filter(pvalue < 0.01), "cluster" = "MG-01"),
+                cbind(data.frame(microglia_vs_HM.wt.bp[["03"]]) %>% dplyr::filter(pvalue < 0.01), "cluster" = "MG-03")) #,cbind(data.frame(microglia_vs_HM.wt.bp[["10"]]) %>% dplyr::filter(pvalue < 0.01), "cluster" = "MG-10")
+df.reactome <- rbind(cbind(data.frame(setReadable(microglia_vs_HM.wt.reactome[["01"]],'org.Mm.eg.db', 'ENTREZID') %>% dplyr::filter(pvalue < 0.01)), "cluster" = "MG-01")),
+                       #cbind(data.frame(setReadable(microglia_vs_HM.wt.reactome[["03"]],'org.Mm.eg.db', 'ENTREZID') %>% dplyr::filter(pvalue < 0.01)), "cluster" = "MG-03"))
+                       #cbind(data.frame(setReadable(microglia_vs_HM.wt.reactome[["10"]],'org.Mm.eg.db', 'ENTREZID') %>% dplyr::filter(pvalue < 0.05)), "cluster" = "MG-10"))
+
+
+######## Figure 3D
+
+require(EnhancedVolcano)
+require(nichenetr)
+ciliGenes<-fread("/mnt/workingB/genesets/CiliaCarta.csv") #%>% dplyr::filter("in") %>% pull("Associated Gene Name") %>% convert_human_to_mouse_symbols()
+
+ciliGene <- ciliGenes[,2][grep("Gene Ontology",ciliGenes$Inclusion)] %>% pull("Associated Gene Name") %>% convert_human_to_mouse_symbols()
+
+phago<-fread("/mnt/workingB/genesets/GO_term_summary_20230919_012306.txt")
+phagocytosis <- phago$'MGI Gene/Marker ID' %>% unique()
+
+for(id in c("03","01")) {
+require(EnhancedVolcano)
+  pdf(paste0(file.path("/mnt","workingD","analysis","results"),"/Figure3_vc_",id,".pdf"), width = 5, height = 7.5)
+  EnhancedVolcano(mg.subset.DE.wt[[id]],
+                      lab = mg.subset.DE.wt[[id]] %>% rownames(),
+                      x = 'avg_log2FC',
+                      y = 'p_val'   ,
+                      xlim = c(-max(abs(mg.subset.DE.wt[[id]]$avg_log2FC))-0.1, max(abs(mg.subset.DE.wt[[id]]$avg_log2FC))+0.1),
+                      ylim = c(-1, max(-log10(mg.subset.DE.wt[[id]]$p_val))+0.1),
+                      title = paste0("MG-",id," vs MG-02"),
+                      subtitle = "5xFAD versus C57BL/6 : differential expression using MAST",
+                      xlab = bquote(~Log[2]~ 'fold change'),
+                      ylab = bquote(~Log[10]~ 'P-value'),
+                      pCutoff = 0.00001,
+                      FCcutoff = 0.25,
+                      pointSize = 0.1,
+                      labSize = 4,
+                      selectLab = intersect(mg.subset.DE.wt[[id]] %>% dplyr::filter(p_val_adj < 0.1 & abs(avg_log2FC) > 0.25) %>% rownames() , unique(c(unique(unlist(str_split(df_gsea$core_enrichment,"\\/"))), ciliGene))),,                   
+                      colAlpha = 0.5,
+                      legendPosition = 'bottom',
+                      drawConnectors = TRUE,
+                      widthConnectors = 0.05,
+                      colConnectors = 'black',
+                       border = 'full',
+                      borderWidth = 0.5,
+                      axisLabSize = 10,
+                      titleLabSize = 12,
+                      subtitleLabSize = 10,
+                      captionLabSize = 10,
+                      maxoverlapsConnectors = 100)
+    dev.off()
+}
+
+
+######## Figure 3E
+require(ggsci)
+require(RColorBrewer)
+#   mutate(setSize = str_sub(Overlap, 0, str_locate(Overlap, "/")[,1]-1) %>% as.numeric()) %>%
+p3e<-rbind(df.cc[grepl("vesicle|granule|vacuole|lysosome|endosome|cili", df.cc$Description) & !grepl("regulation", df.cc$Description),],
+        df.bp[grepl("gliogenesis|wound|inflammatory|cili", df.bp$Description) & !grepl("regulation", df.bp$Description),],
+        df.reactome[!grepl("Signal|Neutrophil|GTPase|Regulation", df.reactome$Description), ])  %>%
+ #arrange(desc(setSize)) %>%
+  ggplot(aes(x=NES, y=Description, fill = cluster))+
+  geom_col(just = 0.5) +
+        theme_bw() + 
+        scale_fill_brewer(palette = "Pastel1")+
+        # scale_fill_npg()+
+  theme(legend.position = "bottom",  
+        axis.title = element_text(size = 24, face = "bold"), 
+        plot.title = element_blank(), 
+        axis.text = element_text(size = 20),  
+        axis.line = element_blank(), 
+        axis.ticks = element_blank(),
+        # legend.key.size = unit(1, 'in'),
+         legend.title = element_blank(),
+        legend.text = element_text(size=20))    +
+    xlab("Normalized Enrichment Score") + 
+    ylab("") 
