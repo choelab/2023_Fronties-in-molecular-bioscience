@@ -231,20 +231,16 @@ for(id in c("03","01","10")) {
 
 
 df.cc <- rbind(cbind(data.frame(microglia_vs_HM.wt.cc[["01"]]) %>% dplyr::filter(pvalue < 0.01), "cluster" = "MG-01"),
-               cbind(data.frame(microglia_vs_HM.wt.cc[["03"]]) %>% dplyr::filter(pvalue < 0.01), "cluster" = "MG-03")) #,cbind(data.frame(microglia_vs_HM.wt.cc[["10"]]) %>% dplyr::filter(pvalue < 0.01), "cluster" = "MG-10")
+               cbind(data.frame(microglia_vs_HM.wt.cc[["03"]]) %>% dplyr::filter(pvalue < 0.01), "cluster" = "MG-03"))
 df.bp <- rbind(cbind(data.frame(microglia_vs_HM.wt.bp[["01"]]) %>% dplyr::filter(pvalue < 0.01), "cluster" = "MG-01"),
-                cbind(data.frame(microglia_vs_HM.wt.bp[["03"]]) %>% dplyr::filter(pvalue < 0.01), "cluster" = "MG-03")) #,cbind(data.frame(microglia_vs_HM.wt.bp[["10"]]) %>% dplyr::filter(pvalue < 0.01), "cluster" = "MG-10")
-df.reactome <- rbind(cbind(data.frame(setReadable(microglia_vs_HM.wt.reactome[["01"]],'org.Mm.eg.db', 'ENTREZID') %>% dplyr::filter(pvalue < 0.01)), "cluster" = "MG-01")),
-                       #cbind(data.frame(setReadable(microglia_vs_HM.wt.reactome[["03"]],'org.Mm.eg.db', 'ENTREZID') %>% dplyr::filter(pvalue < 0.01)), "cluster" = "MG-03"))
-                       #cbind(data.frame(setReadable(microglia_vs_HM.wt.reactome[["10"]],'org.Mm.eg.db', 'ENTREZID') %>% dplyr::filter(pvalue < 0.05)), "cluster" = "MG-10"))
-
+                cbind(data.frame(microglia_vs_HM.wt.bp[["03"]]) %>% dplyr::filter(pvalue < 0.01), "cluster" = "MG-03"))
+df.reactome <- cbind(data.frame(setReadable(microglia_vs_HM.wt.reactome[["01"]],'org.Mm.eg.db', 'ENTREZID') %>% dplyr::filter(pvalue < 0.01)), "cluster" = "MG-01")
 
 ######## Figure 3D
 
 require(EnhancedVolcano)
 require(nichenetr)
 ciliGenes<-fread("/mnt/workingB/genesets/CiliaCarta.csv") #%>% dplyr::filter("in") %>% pull("Associated Gene Name") %>% convert_human_to_mouse_symbols()
-
 ciliGene <- ciliGenes[,2][grep("Gene Ontology",ciliGenes$Inclusion)] %>% pull("Associated Gene Name") %>% convert_human_to_mouse_symbols()
 
 phago<-fread("/mnt/workingB/genesets/GO_term_summary_20230919_012306.txt")
